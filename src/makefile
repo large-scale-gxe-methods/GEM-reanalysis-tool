@@ -12,9 +12,9 @@ CXX_OBJECTS= matrix_utils.o read_parameters.o regem_main.o
 OBJS= $(CXX_OBJECTS)
 
 #targets
-all: regem
+all: REGEM
 
-regem: $(CXX_OBJECTS) $(C_OBJECTS)
+REGEM: $(CXX_OBJECTS) $(C_OBJECTS)
 	$(CXX) $^ $(CXXFLAGS) -o $@ $(LIBS)
 
 %.o: %.cpp

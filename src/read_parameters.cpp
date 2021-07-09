@@ -39,17 +39,11 @@ void CommandLine::processCommandLine(int argc, char* argv[]) {
     po::options_description resultsfile("Results file options");
     resultsfile.add_options()
         ("exposure-names", po::value<std::vector<std::string>>()->multitoken(), "")
-        ("int-covar-names", po::value<std::vector<std::string>>()->multitoken(), "")
-        ("delim", po::value<std::string>()->default_value(","), "");
-
-    //Performance options
-    po::options_description performance("Performance options");
-    performance.add_options()
-        ("threads", po::value<int>()->default_value(ceil((boost::thread::hardware_concurrency() / 2))), "");
+        ("int-covar-names", po::value<std::vector<std::string>>()->multitoken(), "");
 
     // Combine all options together
     po::options_description all("Options");
-    all.add(general).add(files).add(resultsfile).add(performance);
+    all.add(general).add(files).add(resultsfile);
 
     po::variables_map out;
 
@@ -156,36 +150,6 @@ void CommandLine::processCommandLine(int argc, char* argv[]) {
         }
         numIntSelCol = icov.size();
     }
-
-    if (out.count("delim")) {
-        string s_delim = out["delim"].as<string>();
-
-        char delim[300];
-        strcpy(delim, s_delim.c_str());
-        if ((delim[0] == '\\' && delim[1] == 't') || delim[0] == 't') {
-            pheno_delim = '\t';
-        }
-        else if ((delim[0] == '\\' && delim[1] == '0') || delim[0] == '0') {
-            pheno_delim = ' ';
-        }
-        else {
-            pheno_delim = delim[0];
-        }
-
-    }
-
-
-    // Performance options
-    if (out.count("threads")) {
-        threads = out["threads"].as<int>();
-
-        if (threads <= 0) {
-            cerr << "\nERROR: Please specify --threads with a value greater than 0.\n\n";
-            exit(1);
-        }
-    }
-
-
 
     
     // Print parameter info
