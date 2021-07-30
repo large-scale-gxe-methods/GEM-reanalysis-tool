@@ -14,7 +14,7 @@ void CommandLine::processCommandLine(int argc, char* argv[]) {
 
 
     cout << "\n*********************************************************\n";
-    cout << "Welcome to ReGEM v" << VERSION << "\n";
+    cout << "Welcome to REGEM v" << VERSION << "\n";
     cout << "(C) 2021 Duy Pham and Han Chen \n";
     cout << "GNU General Public License v3\n";
     cout << "*********************************************************\n";

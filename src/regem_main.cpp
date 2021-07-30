@@ -2,7 +2,7 @@
 #include "declars.h"
 
 static inline double Square (double x) { return x*x; }
-
+void printExecutionTime(std::chrono::high_resolution_clock::time_point start_time, std::chrono::high_resolution_clock::time_point end_time);
 void printOutputHeader(int n_varInfo, int printStart, int printEnd, int robust, bool strata, vector<string> catE_headers, vector<string> covNames, string outStyle, string output);
 std::vector<std::string> cartesian_vec( vector<vector<string> >& v );
 std::vector<std::string> cartesian_vec_sep( vector<vector<string> >& v);
@@ -522,10 +522,12 @@ int main(int argc, char* argv[])
 			for (int ii = printStart; ii < printEnd; ii++) {
             	oss << sqrt(Vi_dot[ii * Sq1 + ii]) << "\t";
 			}
-			for (int ii = printStart; ii < printEnd; ii++) {
-				for (int jj = printStart; jj < printEnd; jj++) {
-					if (ii < jj) {
-						oss << Vi_dot[ii * Sq1 + jj] << "\t";
+			if (printMeta || printFull) {
+				for (int ii = printStart; ii < printEnd; ii++) {
+					for (int jj = printStart; jj < printEnd; jj++) {
+						if (ii < jj) {
+							oss << Vi_dot[ii * Sq1 + jj] << "\t";
+						}
 					}
 				}
 			}
@@ -539,12 +541,37 @@ int main(int argc, char* argv[])
 	results.close();
 	
 	auto end_time = std::chrono::high_resolution_clock::now();
-	cout << "Finished\n";
+	printExecutionTime(start_time, end_time);
 	return 0;
 }
 
 
+void printExecutionTime(std::chrono::high_resolution_clock::time_point start_time, std::chrono::high_resolution_clock::time_point end_time)
+{
 
+    auto execution_time_ms   = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+    auto execution_time_sec  = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time).count();
+    auto execution_time_min  = std::chrono::duration_cast<std::chrono::minutes>(end_time - start_time).count();
+    auto execution_time_hour = std::chrono::duration_cast<std::chrono::hours>(end_time - start_time).count();
+
+    execution_time_ms   = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+    execution_time_sec  = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time).count();
+    execution_time_min  = std::chrono::duration_cast<std::chrono::minutes>(end_time - start_time).count();
+    execution_time_hour = std::chrono::duration_cast<std::chrono::hours>(end_time - start_time).count();
+
+    cout << "Execution time... ";
+    if (execution_time_hour > 0)
+        cout << "" << execution_time_hour << "h, ";
+    if (execution_time_min > 0)
+        cout << "" << execution_time_min % 60 << "m, ";
+    if (execution_time_sec > 0)
+        cout << "" << execution_time_sec % 60 << "s, ";
+    if (execution_time_ms > 0)
+        cout << "" << execution_time_ms % long(1E+3) << " ms";
+    cout << "\n";
+    cout << "Done. \n";
+    cout << "*********************************************************\n";
+}
 
 void printOutputHeader(int n_varInfo, int printStart, int printEnd, int robust, bool strata, vector<string> catE_headers, vector<string> covNames, string outStyle, string output) 
 {
@@ -588,7 +615,7 @@ void printOutputHeader(int n_varInfo, int printStart, int printEnd, int robust, 
 		for (int i = printStart; i < printEnd; i++) {
             for (int j = printStart; j < printEnd; j++) {
                 if (i < j) {
-                   results << "robust_SE_" << covNames[i] << "_" << covNames[j] << "\t";  
+                   results << "robust_Cov_Beta_" << covNames[i] << "_" << covNames[j] << "\t";  
                 } 
             }
         }
@@ -613,14 +640,16 @@ void printOutputHeader(int n_varInfo, int printStart, int printEnd, int robust, 
 		results  << "robust_P_value_Marginal" << "\t" << "robust_P_Value_Interaction" << "\t" << "robust_P_Value_Joint" << "\t";
         (printMeta || printFull) ? results << "P_value_Marginal" << "\t" << "P_Value_Interaction" << "\t" << "P_Value_Joint\n" : results << "\n";
 	} else {
-		if (printMeta || printFull) {
-			for (int i = printStart; i < printEnd; i++) {
-                for (int j = printStart; j < printEnd; j++) {
-                    if (i == j) {
-                        results << "SE_Beta_" << covNames[j] << "\t"; 
-                    }
+
+		for (int i = printStart; i < printEnd; i++) {
+            for (int j = printStart; j < printEnd; j++) {
+                if (i == j) {
+                    results << "SE_Beta_" << covNames[j] << "\t"; 
                 }
             }
+        }
+
+		if (printMeta || printFull) {
             for (int i = printStart; i < printEnd; i++) {
                 for (int j = printStart; j < printEnd; j++) {
                     if (i < j) {
