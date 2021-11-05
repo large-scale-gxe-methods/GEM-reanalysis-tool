@@ -7,8 +7,8 @@ CXXFLAGS = -std=c++11 -O2 -g
 
 LIBS= -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -ldl -lpthread -lm -lboost_program_options -lboost_thread -lboost_system -lboost_filesystem
 
-CXX_SOURCES= matrix_utils.cpp read_parameters.cpp regem_main.cpp
-CXX_OBJECTS= matrix_utils.o read_parameters.o regem_main.o
+CXX_SOURCES= matrix_utils.cpp read_parameters.cpp regem.cpp
+CXX_OBJECTS= matrix_utils.o read_parameters.o regem.o
 OBJS= $(CXX_OBJECTS)
 
 #targets

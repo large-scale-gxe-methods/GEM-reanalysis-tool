@@ -17,11 +17,17 @@ public:
 	std::string outFile;
 	std::string outStyle; 
 
-	std::vector<std::string> exp;
 	std::vector<std::string> icov;	
+	std::vector<std::string> interactions;
 
 	int numExpSelCol = 0;
 	int numIntSelCol = 0;
+
+	// Ouput style
+	bool printMeta  = false;
+	bool printFull  = false;
+	int  printStart;
+	int  printEnd;
 
 	// Performance options
 	int threads;
