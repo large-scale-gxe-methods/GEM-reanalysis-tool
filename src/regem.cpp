@@ -2,7 +2,7 @@
 
 std::vector<std::string> cartesian_vec( vector<vector<string> >& v );
 void printExecutionTime(std::chrono::high_resolution_clock::time_point start_time, std::chrono::high_resolution_clock::time_point end_time);
-void printOutputHeader(int n_varInfo, int printStart, int printEnd, int robust, bool strata, bool printMeta, bool printFull, vector<string> catE_headers, vector<string> covNames, string output);
+void printOutputHeader(int n_varInfo, int printStart, int printEnd, int robust, bool strata, bool printMeta, bool printFull, double sigma2, vector<string> catE_headers, vector<string> covNames, string output);
 void compute_subcategorical(int Sq, std::vector<string> interactions, std::vector<string> stratum_names, bool* strata_ret, std::vector<int>* len_ret, std::vector<int>* idx_ret, std::vector<string>* header_ret);
 
 int main(int argc, char* argv[]) 
@@ -30,15 +30,15 @@ int main(int argc, char* argv[])
 
 	// Read input file
 	std::ifstream res;
-    	res.open(cmd.inFile);
-    	if (!res.is_open()) {
-        	cerr << "\nERROR: Cannot open results file. \n\n" << endl;
-        	exit(1);
-    	}
+	res.open(cmd.inFile);
+	if (!res.is_open()) {
+		cerr << "\nERROR: Cannot open results file. \n\n" << endl;
+		exit(1);
+	}
 
 	// Get dispersion
 	std::string line;
-    	getline(res, line);
+	getline(res, line);
 
 	double sigma2 = 0.0;
 	if (line.rfind("#dispersion", 0) != 0) {
@@ -62,22 +62,22 @@ int main(int argc, char* argv[])
 
 	int header_i = 0;
 	std::string header;
-    	std::istringstream iss(line);
-    	while (getline(iss, header, '\t')) {
-        	header.erase(std::remove(header.begin(), header.end(), '\r'), header.end());
+	std::istringstream iss(line);
+	while (getline(iss, header, '\t')) {
+		header.erase(std::remove(header.begin(), header.end(), '\r'), header.end());
 		if (column_names.find(header) != column_names.end()) {
-            		cerr << "\nERROR: There are duplicate header names (" << header << ") in the results file.\n\n";
-            		exit(1);
-        	}
+			cerr << "\nERROR: There are duplicate header names (" << header << ") in the results file.\n\n";
+			exit(1);
+			}
 		column_names[header] = header_i;
-
-        	if (header.rfind("Beta_G-", 0) == 0) {
-            		string tmp_name = header;
-            		tmp_name.erase(0, 7);
-            		if (std::find(interactions.begin(), interactions.end(), tmp_name) == interactions.end()) {
-                		interactions.push_back(tmp_name);
-            		}
-       		}
+		
+		if (header.rfind("Beta_G-", 0) == 0) {
+			string tmp_name = header;
+			tmp_name.erase(0, 7);
+			if (std::find(interactions.begin(), interactions.end(), tmp_name) == interactions.end()) {
+				interactions.push_back(tmp_name);
+				}
+		}
 
 		if (header.rfind("N_", 0) == 0) {
 			if (header != "N_Samples") {
@@ -89,9 +89,9 @@ int main(int argc, char* argv[])
 		if ((robust !=1) && (header.rfind("robust_", 0) == 0)) {
 			robust = 1;
 		}
-
-        	header_i++;
-    	}
+		
+		header_i++;
+	}
 
 
 	// Compute new strata if needed
@@ -192,15 +192,15 @@ int main(int argc, char* argv[])
 
 
 	// Check if there are results in the input file
-    	int nvars = 0;
-    	while (getline(res, line)) nvars++;
+	int nvars = 0;
+	while (getline(res, line)) nvars++;
 	if (nvars == 0) {
 		cerr << "\nERROR: No GEM results in the input file.\n\n.";
 		exit(1);
 	} else {
 		res.clear(); 
 		res.seekg(0, res.beg);
-    		getline(res, line);
+		getline(res, line);
 		getline(res, line);	
 	}
 
@@ -208,7 +208,7 @@ int main(int argc, char* argv[])
 	// Create the output file and write column header names
 	std::ofstream results(cmd.outFile, std::ios_base::app);
 	std::ostringstream oss;
-	printOutputHeader(n_varInfo, cmd.printStart, cmd.printEnd, robust, strata, cmd.printMeta, cmd.printFull, subCategories_header, interactions, cmd.outFile);
+	printOutputHeader(n_varInfo, cmd.printStart, cmd.printEnd, robust, strata, cmd.printMeta, cmd.printFull, sigma2, subCategories_header, interactions, cmd.outFile);
 
 
 
@@ -291,7 +291,7 @@ int main(int argc, char* argv[])
 			subMatrix(O, O_dot, Sq1, Sq1, dim, Sq1, 0);
 
 			// Compute robust variance-covariance
-            		matNmatNprod(O_dot, Vi_dot,  RV_dot, Sq1, Sq1, Sq1);
+			matNmatNprod(O_dot, Vi_dot,  RV_dot, Sq1, Sq1, Sq1);
 			matNmatNprod(Vi_dot, RV_dot, RV_dot, Sq1, Sq1, Sq1);
 
 			// Robust Stat Int
@@ -354,26 +354,26 @@ int main(int argc, char* argv[])
 			vector<double> tv(n_strata_col);
 			for (int j = 0; j < (n_strata_col); j++) 
 				tv[j] = std::stod(values[(n_varInfo) + j]);
-
-            		while (i < subCategories_idx.size()) 
+				
+			while (i < subCategories_idx.size()) 
 			{
-                		for (int j = 0; j < subCategories_len[k]; j++) 
+				for (int j = 0; j < subCategories_len[k]; j++) 
 				{
-                    			strata_N[k]  += tv[subCategories_idx[i]];
-                    			strata_AF[k] += (tv[subCategories_idx[i]] * ((!std::isnan(tv[subCategories_idx[i]+1])) ? tv[subCategories_idx[i]+1] : 0));
-                    			i++;
-                		}
-                		strata_AF[k] = (strata_N[k] != 0) ? strata_AF[k] /= strata_N[k] : NAN;
-                		k++;
-            		}
+					strata_N[k]  += tv[subCategories_idx[i]];
+					strata_AF[k] += (tv[subCategories_idx[i]] * ((!std::isnan(tv[subCategories_idx[i]+1])) ? tv[subCategories_idx[i]+1] : 0));
+					i++;
+				}
+				strata_AF[k] = (strata_N[k] != 0) ? strata_AF[k] /= strata_N[k] : NAN;
+				k++;
+			}
 		}
 
 
 
 		// Print variant info
-        	for (int ii = 0; ii < n_varInfo; ii++) {
-        		oss << values[ii] << "\t";
-        	}
+		for (int ii = 0; ii < n_varInfo; ii++) {
+			oss << values[ii] << "\t";
+		}
 
 		if (strata) {
 			for (int ii = 0; ii < n_subStrata; ii++) {
@@ -394,26 +394,26 @@ int main(int argc, char* argv[])
 		}
 
 		// Print betas
-        	for (int ii = printStart; ii < printEnd; ii++) {
-        		oss << Beta_dot[ii] << "\t";
-        	}
+		for (int ii = printStart; ii < printEnd; ii++) {
+			oss << Beta_dot[ii] << "\t";
+		}
 		
 		// Print robust variance-covariance first if applicable.
 		if (robust == 1 ) {
 			for (int ii = printStart; ii < printEnd; ii++) {
-            			oss << sqrt(RV_dot[ii * Sq1 + ii]) << "\t";
-        		}
-        		for (int ii = printStart; ii < printEnd; ii++) {
-            			for (int jj = printStart; jj < printEnd; jj++) {
-                			if (ii < jj) {
-                    				oss << RV_dot[ii * Sq1 + jj] << "\t";
-                			}
-           	 		}
-        		}
+				oss << sqrt(RV_dot[ii * Sq1 + ii]) << "\t";
+			}
+			for (int ii = printStart; ii < printEnd; ii++) {
+				for (int jj = printStart; jj < printEnd; jj++) {
+					if (ii < jj) {
+						oss << RV_dot[ii * Sq1 + jj] << "\t";
+					}
+				}
+			}
 
 			if (printMeta || printFull) {
 				for (int ii = printStart; ii < printEnd; ii++) {
-            				oss << sqrt(Vi_dot[ii * Sq1 + ii]) << "\t";
+					oss << sqrt(Vi_dot[ii * Sq1 + ii]) << "\t";
 				}
 				for (int ii = printStart; ii < printEnd; ii++) {
 					for (int jj = printStart; jj < printEnd; jj++) {
@@ -433,7 +433,7 @@ int main(int argc, char* argv[])
 
 		} else {
 			for (int ii = printStart; ii < printEnd; ii++) {
-            			oss << sqrt(Vi_dot[ii * Sq1 + ii]) << "\t";
+				oss << sqrt(Vi_dot[ii * Sq1 + ii]) << "\t";
 			}
 			if (printMeta || printFull) {
 				for (int ii = printStart; ii < printEnd; ii++) {
@@ -449,11 +449,10 @@ int main(int argc, char* argv[])
 		cnt++;
 
 		if (cnt % 100000 != 0) {
-        	results << oss.str();
-        	oss.str(std::string());
-        	oss.clear();
-			
-    	}	
+			results << oss.str();
+			oss.str(std::string());
+			oss.clear();
+		}	
 	}
 
 	results << oss.str();
@@ -494,92 +493,101 @@ void printExecutionTime(std::chrono::high_resolution_clock::time_point start_tim
 
 
 
-void printOutputHeader(int n_varInfo, int printStart, int printEnd, int robust, bool strata, bool printMeta, bool printFull, vector<string> catE_headers, vector<string> covNames, string output) 
+void printOutputHeader(int n_varInfo, int printStart, int printEnd, int robust, bool strata, bool printMeta, bool printFull, double sigma2, vector<string> catE_headers, vector<string> covNames, string output) 
 {
 	std::ofstream results(output, std::ofstream::binary);
 
-    	results << "SNPID" << ((n_varInfo == 8) ? "\tRSID\t" : "\t") << "CHR" << "\t" << "POS" << "\t" << "Non_Effect_Allele" << "\t" << "Effect_Allele" << "\t" << "N_Samples" << "\t" << "AF" << "\t";
-    	if (strata) {
-        	for (size_t i = 0; i < catE_headers.size(); i++) {
-            		results << "N_"  << catE_headers[i] << "\t";
-            		results << "AF_" << catE_headers[i] << "\t";
-        	}
-   	 }
+	if (printFull)
+	{
+		results << "#dispersion: " << sigma2 << "\n";
+	}
 
-    	results << "Beta_Marginal" << "\t";
-    	if (robust == 1) {
-        	results << "robust_SE_Beta_Marginal" << "\t";
+    results << "SNPID" << ((n_varInfo == 8) ? "\tRSID\t" : "\t") << "CHR" << "\t" << "POS" << "\t" << "Non_Effect_Allele" << "\t" << "Effect_Allele" << "\t" << "N_Samples" << "\t" << "AF" << "\t";
+    if (strata) {
+        for (size_t i = 0; i < catE_headers.size(); i++) {
+            results << "N_"  << catE_headers[i] << "\t";
+            results << "AF_" << catE_headers[i] << "\t";
+        }
+   	}
+	
+	
+	results << "Beta_Marginal" << "\t";
+	if (robust == 1) {
+		results << "robust_SE_Beta_Marginal" << "\t";
 		if (printMeta || printFull) {
-			 results << "SE_Beta_Marginal" << "\t";
+			results << "SE_Beta_Marginal" << "\t";
 		}
-    	} else {
+	} else {
 		results << "SE_Beta_Marginal" << "\t";
 	}
 
 	// Print beta header
 	for (int i = printStart; i < printEnd; i++) {
-        	results << "Beta_" << covNames[i] << "\t";
-    	}
+        results << "Beta_" << covNames[i] << "\t";
+    }
 
 	if (robust == 1) {
 		for (int i = printStart; i < printEnd; i++) {
 			results << "robust_SE_" << covNames[i] << "\t";  
 		}
 
-		for (int i = printStart; i < printEnd; i++) {
-            		for (int j = printStart; j < printEnd; j++) {
-                		if (i < j) {
-                  			results << "robust_Cov_Beta_" << covNames[i] << "_" << covNames[j] << "\t";  
-                		} 
-            		}
-        	}
+		for (int i = printStart; i < printEnd; i++) 
+		{
+			for (int j = printStart; j < printEnd; j++) 
+			{
+				if (i < j) {
+					results << "robust_Cov_Beta_" << covNames[i] << "_" << covNames[j] << "\t";  
+				} 
+			}
+		}
 
 		if (printMeta || printFull) {
 			for (int i = printStart; i < printEnd; i++) {
-                		for (int j = printStart; j < printEnd; j++) {
-                    			if (i == j) {
-                        			results << "SE_Beta_" << covNames[j] << "\t"; 
-                   			}
-                		}
-            		}
-            		for (int i = printStart; i < printEnd; i++) {
-                		for (int j = printStart; j < printEnd; j++) {
-                    			if (i < j) {
-                        			results << "Cov_Beta_" << covNames[i] << "_" << covNames[j] << "\t"; 
-                    			}
-                		}
-            		}
+				for (int j = printStart; j < printEnd; j++) {
+					if (i == j) {
+						results << "SE_Beta_" << covNames[j] << "\t"; 
+						}
+					}
+			}
+			for (int i = printStart; i < printEnd; i++) {
+				for (int j = printStart; j < printEnd; j++) {
+					if (i < j) {
+						results << "Cov_Beta_" << covNames[i] << "_" << covNames[j] << "\t"; 
+					}
+				}
+			}
 		}
 
 		results  << "robust_P_value_Marginal" << "\t" << "robust_P_Value_Interaction" << "\t" << "robust_P_Value_Joint" << "\t";
-        	(printMeta || printFull) ? results << "P_value_Marginal" << "\t" << "P_Value_Interaction" << "\t" << "P_Value_Joint\n" : results << "\n";
+		(printMeta || printFull) ? results << "P_value_Marginal" << "\t" << "P_Value_Interaction" << "\t" << "P_Value_Joint\n" : results << "\n";
+
 	} else {
 
 		for (int i = printStart; i < printEnd; i++) {
-            		for (int j = printStart; j < printEnd; j++) {
-                		if (i == j) {
-                    			results << "SE_Beta_" << covNames[j] << "\t"; 
-                		}
-            		}
-        	}
+			for (int j = printStart; j < printEnd; j++) {
+				if (i == j) {
+					results << "SE_Beta_" << covNames[j] << "\t"; 
+				}
+			}
+		}
 
 		if (printMeta || printFull) 
 		{
-            		for (int i = printStart; i < printEnd; i++) 
+			for (int i = printStart; i < printEnd; i++) 
 			{
-                		for (int j = printStart; j < printEnd; j++) 
+				for (int j = printStart; j < printEnd; j++) 
 				{
-                    			if (i < j) 
+					if (i < j) 
 					{
-                        			results << "Cov_Beta_" << covNames[i] << "_" << covNames[j] << "\t"; 
-                    			}
-                		}
-            		}
+						results << "Cov_Beta_" << covNames[i] << "_" << covNames[j] << "\t"; 
+					}
+				}
+			}
 		}
 		results << "P_value_Marginal" << "\t" << "P_Value_Interaction" << "\t" << "P_Value_Joint\n";
 	}
-
-    results.close();
+	
+	results.close();
 }
 
 

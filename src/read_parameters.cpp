@@ -32,7 +32,7 @@ void CommandLine::processCommandLine(int argc, char* argv[]) {
     files.add_options()
         ("input-file", po::value<std::string>(), "")
         ("out", po::value<std::string>()->default_value("regem.out"), "")
-        ("output-style", po::value<std::string>()->default_value("minimum"), "");
+        ("output-style", po::value<std::string>()->default_value("full"), "");
 
     // Phenotype file
     po::options_description resultsfile("Results file options");
@@ -118,9 +118,16 @@ void CommandLine::processCommandLine(int argc, char* argv[]) {
                 cerr << "\nERROR: Exposure " + interactions[i] + " is specified more than once.\n\n";
                 exit(1);
             }
+
+            if (std::find(icov.begin(), icov.end(), interactions[i])!= icov.end())
+            {
+                cerr << "\nERROR: Exposure " + interactions[i] + " is also specified as interaction covariate.\n\n";
+                exit(1);
+            }
         }
 
-        numExpSelCol = interactions.size() - numIntSelCol;
+        numExpSelCol = interactions.size();
+
         if (numIntSelCol > 0) {
 		    for (int i = 0; i < numIntSelCol; i++)
 			    interactions.push_back(icov[i]);
@@ -191,8 +198,8 @@ void CommandLine::processCommandLine(int argc, char* argv[]) {
     else {
         cout << "The Total Number of Selected Interaction Covariates is: " << numIntSelCol << "\n";
         cout << "The Selected Interaction Covariates are:  ";
-        for (int i = numExpSelCol; i < numIntSelCol+1; i++) {
-            cout << icov[i] << "   ";
+        for (int i = numExpSelCol; i < (numExpSelCol + numIntSelCol); i++) {
+            cout << interactions[i] << "   ";
         }
         cout << "\n";
     }
