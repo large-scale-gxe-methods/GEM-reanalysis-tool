@@ -303,7 +303,7 @@ int main(int argc, char* argv[])
 			for (int j = 1; j < expSq1; j++) 
 				statInt += Beta_dot[j] * StempE[j-1];
 
-			R_pvalInt = (isnan(statInt) || statInt <= 0.0) ? NAN : boost::math::cdf(complement(chisq_dist_Int, statInt));
+			R_pvalInt = (std::isnan(statInt) || statInt <= 0.0) ? NAN : boost::math::cdf(complement(chisq_dist_Int, statInt));
 
 			// Robust Stat Joint
 			subMatrix(RV_dot, A_i, expSq1, expSq1, Sq1, expSq1, 0);
@@ -314,7 +314,7 @@ int main(int argc, char* argv[])
 			for (int k = 0; k < expSq1; k++)
 				statJoint += Beta_dot[k] * StempGE[k];
 			
-			R_pvalJoint = (isnan(statJoint) || statJoint <= 0.0) ? NAN : boost::math::cdf(complement(chisq_dist_Joint, statJoint));
+			R_pvalJoint = (std::isnan(statJoint) || statJoint <= 0.0) ? NAN : boost::math::cdf(complement(chisq_dist_Joint, statJoint));
 		}
 
 
@@ -332,7 +332,7 @@ int main(int argc, char* argv[])
 		for (int j = 1; j < expSq1; j++) 
 			statInt += Beta_dot[j] * StempE[j-1];
 
-		M_pvalInt = (isnan(statInt) || statInt <= 0.0) ? NAN : boost::math::cdf(complement(chisq_dist_Int, statInt));
+		M_pvalInt = (std::isnan(statInt) || statInt <= 0.0) ? NAN : boost::math::cdf(complement(chisq_dist_Int, statInt));
 
 
 		// Model-based Stat Joint
@@ -344,7 +344,7 @@ int main(int argc, char* argv[])
 		for (int k = 0; k < expSq1; k++)
 			statJoint += Beta_dot[k] * StempGE[k];
 			
-		M_pvalJoint = (isnan(statJoint) || statJoint <= 0.0) ? NAN : boost::math::cdf(complement(chisq_dist_Joint, statJoint));
+		M_pvalJoint = (std::isnan(statJoint) || statJoint <= 0.0) ? NAN : boost::math::cdf(complement(chisq_dist_Joint, statJoint));
 
 		if (strata) 
 		{
