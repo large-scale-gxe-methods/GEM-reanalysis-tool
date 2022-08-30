@@ -1,6 +1,7 @@
 #ifndef READPARAMETERS2_H
 #define READPARAMETERS2_H
 
+#include <vector>
 #include <string>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,22 +18,24 @@ public:
 	std::string outFile;
 	std::string outStyle; 
 
-	std::vector<std::string> icov;	
 	std::vector<std::string> interactions;
 
-	int numExpSelCol = 0;
-	int numIntSelCol = 0;
+	size_t nExp  = 0;
+	size_t nExp1 = 0;
+	size_t nIntCov = 0;
+	size_t nInt1 = 0;
 
 	// Ouput style
-	bool printMeta  = false;
-	bool printFull  = false;
-	int  printStart;
-	int  printEnd;
+	int  printStart = 0;
+	int  printEnd   = 0;
 
 	// Performance options
 	int threads;
 	void processCommandLine(int argc, char* argv[]);
 };
 
+void print_welcome();
+
+void print_help();
 
 #endif

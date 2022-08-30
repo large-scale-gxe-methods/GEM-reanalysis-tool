@@ -2,25 +2,17 @@
   ReadParameters.cpp reads parameters from a file
 ****************************************************************************/
 
-#include "declars.h"
+#include "regem.h"
 
-#define VERSION "1.0"
 
-void print_help();
+namespace po = boost::program_options;
 
 // Function to process command line arguments
-void CommandLine::processCommandLine(int argc, char* argv[]) {
-
-
-    cout << "\n*********************************************************\n";
-    cout << "Welcome to REGEM v" << VERSION << "\n";
-    cout << "(C) 2021 Duy Pham and Han Chen \n";
-    cout << "GNU General Public License v3\n";
-    cout << "*********************************************************\n";
-
+void CommandLine::processCommandLine(int argc, char* argv[]) 
+{
+    print_welcome();
 
     // GEM parameters. Details are printed from the print_help() function below.
-
     // General commands
     po::options_description general("General options");
     general.add_options()
@@ -46,7 +38,6 @@ void CommandLine::processCommandLine(int argc, char* argv[]) {
 
     po::variables_map out;
 
-
     // QC
     try {
         po::store(po::command_line_parser(argc, argv)
@@ -58,11 +49,10 @@ void CommandLine::processCommandLine(int argc, char* argv[]) {
 
     }
     catch (po::error const& e) {
-        std::cerr << e.what() << endl;
+        std::cout << e.what() << endl;
         exit(EXIT_FAILURE);
     }
     po::notify(out);
-
 
 
     // General
@@ -72,7 +62,7 @@ void CommandLine::processCommandLine(int argc, char* argv[]) {
 
     }
     if (out.count("version")) {
-        cout << "\nTest version: " << VERSION << "\n" << endl;
+        cout << "\nREGEM version: " << VERSION << "\n" << endl;
         exit(1);
 
     }
@@ -84,69 +74,62 @@ void CommandLine::processCommandLine(int argc, char* argv[]) {
 
     }
     else {
-        cerr << "\nERROR: Results file (--input-file) is needed. \n\n";
+        cout << "\nERROR: Results file (--input-file) is needed. \n\n";
         exit(1);
 
     }
 
 
-    // Interaction covariates
-    if (out.count("int-covar-names")) {
-        icov = out["int-covar-names"].as<std::vector<std::string>>();
-
-        std::unordered_map<std::string, int> icovHM;
-        for (size_t i = 0; i <  icov.size(); i++) {
-            icovHM[icov[i]] += 1;
-            if (icovHM[icov[i]] > 1) {
-                cerr << "\nERROR: Interaction covariate " + icov[i] + " is specified more than once.\n\n";
-                exit(1);
-            }
-        }
-        numIntSelCol = icov.size();
-    }
-
     // Exposures
     if (out.count("exposure-names")) {
         interactions = out["exposure-names"].as<std::vector<std::string>>();
-        if (interactions.size() == 0) {
-            cerr << "\nERROR: No exposure (--exposure-names) is specified.\n\n";
-        }
-        std::unordered_map<std::string, int> expHM;
-        for (size_t i = 0; i < interactions.size(); i++) {
-            expHM[interactions[i]] += 1;
-            if (expHM[interactions[i]] > 1) {
-                cerr << "\nERROR: Exposure " + interactions[i] + " is specified more than once.\n\n";
-                exit(1);
-            }
 
-            if (std::find(icov.begin(), icov.end(), interactions[i])!= icov.end())
-            {
-                cerr << "\nERROR: Exposure " + interactions[i] + " is also specified as interaction covariate.\n\n";
-                exit(1);
-            }
+        std::set<std::string> s(interactions.begin(), interactions.end());
+        if (s.size() != interactions.size()) {
+            cout << "\nERROR: There are duplicate exposure names (--exposure-names).\n\n";
+            exit(1);
         }
 
-        numExpSelCol = interactions.size();
+        nExp  = interactions.size();
+        nExp1 = nExp + 1;
+    } else {
+        cout << "\nERROR: No exposure (--exposure-names) specified.\n\n";
+        exit(1);
+    }
 
-        if (numIntSelCol > 0) {
-		    for (int i = 0; i < numIntSelCol; i++)
-			    interactions.push_back(icov[i]);
+    // Interaction covariates
+    if (out.count("int-covar-names")) {
+        std::vector<std::string> icov = out["int-covar-names"].as<std::vector<std::string>>();
+
+        std::set<std::string> s(icov.begin(), icov.end());
+        if (s.size() != icov.size()) {
+            cout << "\nERROR: There are duplicate interaction covariates names (--int-cov-names).\n\n";
+            exit(1);
+        }
+
+        nIntCov = icov.size();
+        for (size_t i = 0; i < nIntCov; i++) {
+            if (std::find(interactions.begin(), interactions.end(), icov[i]) != interactions.end()) {
+                cout << "\nERROR: Interaction covariate " + icov[i] + " is already specified in --exposure-names.\n\n";
+            }
+            interactions.push_back(icov[i]);
         }
     }
+    nInt1 = interactions.size() + 1;
 
 
     // Output file
     if (out.count("out")) {
-        outFile = out["out"].as<string>();
+        outFile = out["out"].as<std::string>();
 
         std::ofstream results(outFile, std::ofstream::binary);
         if (!results) {
-            cerr << "\nERROR: Output file could not be opened.\n\n";
+            cout << "\nERROR: Output file could not be opened.\n\n";
             exit(1);
         }
 
         if (results.fail()) {
-            cerr << "\nERROR: Output file could not be opened.\n\n";
+            cout << "\nERROR: Output file could not be opened.\n\n";
             exit(1);
         }
 
@@ -154,82 +137,69 @@ void CommandLine::processCommandLine(int argc, char* argv[]) {
         if (results.fail()) {
             cerr << "\nERROR: Cannot write to output file.\n\n";
             results.close();
-            boost::filesystem::remove(outFile.c_str());
+            
+            if (std::remove(outFile.c_str()) != 0) {
+                cerr << "\nERROR: Cannot delete output file.\n\n";
+            }
             exit(1);
         }
         results.close();
 
-        boost::filesystem::remove(outFile.c_str());
+        if (std::remove(outFile.c_str()) != 0) {
+            cerr << "\nERROR: Cannot delete output file.\n\n";
+            exit(1);
+        }
     }
-
 
 
     // Output style
     if (out.count("output-style")) {
-
-        outStyle = out["output-style"].as<string>();
+        outStyle = out["output-style"].as<std::string>();
         if (outStyle.compare("minimum") != 0 && outStyle.compare("meta") != 0  && outStyle.compare("full") != 0 ) {
-            cerr << "\nERROR: --output-style should be minimum, meta or full.\n\n";
+            cout << "\nERROR: --output-style should be minimum, meta or full.\n\n";
             exit(1);
         }
 
-        if (outStyle.compare("meta") == 0) {
+        if (outStyle.compare("meta") == 0 || outStyle.compare("full") == 0) {
             printStart = 0; 
-            printEnd   = numIntSelCol + numExpSelCol + 1; 
-            printMeta  = true;
-        } else if (outStyle.compare("full") == 0) {
-            printStart = 0; 
-            printEnd   = numIntSelCol + numExpSelCol + 1; 
-            printFull  = true;
+            printEnd   = nInt1; 
         } else {
             printStart = 1;
-            printEnd   = numExpSelCol + 1;
+            printEnd   = nExp1;
         }
     }
-
 
 
     // Print parameter info
-    cout << "The Input File is: " << inFile << "\n\n";
-
-    if (numIntSelCol == 0) {
-        cout << "No Interaction Covariates Selected" << "\n";
+    cout << "The input file is [" << inFile << "].\n\n";
+    if (nIntCov == 0) {
+        cout << "No interaction covariates selected." << "\n";
     }
     else {
-        cout << "The Total Number of Selected Interaction Covariates is: " << numIntSelCol << "\n";
-        cout << "The Selected Interaction Covariates are:  ";
-        for (int i = numExpSelCol; i < (numExpSelCol + numIntSelCol); i++) {
-            cout << interactions[i] << "   ";
+        cout << "The selected interaction covariate(s) are: ";
+        for (size_t i = nExp; i < (nInt1 - 1); i++) {
+            cout << interactions[i] << " ";
         }
         cout << "\n";
     }
-
-    if (numExpSelCol == 0) {
-        cout << "No Exposures Selected" << "\n";
+    cout << "The selected exposure(s) are: ";
+    for (size_t i = 0; i < nExp; i++) {
+        cout << interactions[i] << "  ";
     }
-    else {
-        cout << "The Total Number of Exposures is: " << numExpSelCol << '\n';
-
-        cout << "The Selected Exposures are:  ";
-        for (int i = 0; i < numExpSelCol; i++) {
-            cout << interactions[i] << "   ";
-        }
-        cout << "\n\n";
-    }
-
-    cout << "Output File: " << outFile << "\n";
+    cout << "\n";
     cout << "*********************************************************\n";
-
 }
 
 
-
-
-
+void print_welcome() {
+    cout << "\n*********************************************************\n";
+    cout << "Welcome to REGEM v" << VERSION << "\n";
+    cout << "(C) 2021-2022 Duy Pham and Han Chen \n";
+    cout << "GNU General Public License v3\n";
+    cout << "*********************************************************\n";
+}
 
 void print_help() {
-
- 
     cout << "General Options: " << endl
         << "   --help \t\t Prints available options and exits." << endl
         << "   --version \t\t Prints the version of REGEM and exits." << endl;
@@ -238,8 +208,9 @@ void print_help() {
 
 
     cout << "Input File Options: " << endl
-        << "   --results-file \t Path to the GEM results file." << endl
-        << "   --out \t\t Full path and extension to where REGEM output results. \n \t\t\t    Default: regem.out" << endl;
+        << "   --input-file \t Path to the GEM results file." << endl
+        << "   --out \t\t Full path and extension to where REGEM output results. \n \t\t\t    Default: regem.out" << endl
+        << "   --output-style \t Modifies the output of REGEM. Must be one of the following: \n\t\t\t    minimum: Output the summary statistics for only the GxE and marginal G terms. \n \t\t\t    meta: 'minimum' output plus additional fields for the main G and any GxCovariate terms \n \t\t\t\t  For a robust analysis, additional columns for the model-based summary statistics will be included.  \n \t\t\t    full: 'meta' output plus additional fields needed for re-analyses of a subset of interactions \n \t\t\t    Default: full" << endl; 
     cout << endl << endl;
 
 
@@ -247,13 +218,6 @@ void print_help() {
         << "   --exposure-names \t One or more column names in the phenotype file naming the exposure(s) to be included in interaction tests." << endl
         << "   --int-covar-names \t Any column names in the phenotype file naming the covariate(s) for which interactions should\n \t\t\t   be included for adjustment (mutually exclusive with --exposure-names)." << endl;
     cout << endl << endl;
-
-
-    cout << "Filtering Options: " << endl
-        << "   --maf \t\t Threshold to filter variants based on the minor allele frequency.\n \t\t\t    Default: 0.001" << endl
-        << "   --miss-geno-cutoff \t Threshold to filter variants based on the missing genotype rate.\n \t\t\t    Default: 0.05" << endl;
-    cout << endl << endl;
-
     cout << endl << endl;
 
 }
