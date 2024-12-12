@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <unordered_map>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -28,6 +29,11 @@ public:
 	// Ouput style
 	int  printStart = 0;
 	int  printEnd   = 0;
+
+	// Center conversion options
+	int centerIn = 0;
+	int centerOut = 0;
+	std::unordered_map<std::string, double> meanValues;
 
 	// Performance options
 	int threads;

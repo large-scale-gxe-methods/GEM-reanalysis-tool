@@ -12,6 +12,7 @@
 #include "matrix_utils.h"
 #include "read_parameters.h"
 #include "file.h"
+#include "center.h"
 
 #define VERSION "1.0"
 

@@ -31,10 +31,17 @@ void CommandLine::processCommandLine(int argc, char* argv[])
     resultsfile.add_options()
         ("exposure-names", po::value<std::vector<std::string>>()->multitoken(), "")
         ("int-covar-names", po::value<std::vector<std::string>>()->multitoken(), "");
+  
+    // Center Conversion Options
+    po::options_description centerConversion("Center Conversion Options");
+    centerConversion.add_options()
+    ("center-in", po::value<int>()->default_value(0), "")
+    ("center-out", po::value<int>()->default_value(0), "")
+    ("mean-value", po::value<std::vector<std::string>>()->multitoken(), "");
 
     // Combine all options together
     po::options_description all("Options");
-    all.add(general).add(files).add(resultsfile);
+    all.add(general).add(files).add(resultsfile).add(centerConversion);
 
     po::variables_map out;
 
@@ -116,6 +123,50 @@ void CommandLine::processCommandLine(int argc, char* argv[])
         }
     }
     nInt1 = interactions.size() + 1;
+
+    // Centering Input
+    if (out.count("center-in")) {
+        centerIn = out["center-in"].as<int>();
+        if (centerIn < 0 || centerIn > 2) {
+            cout << "\nERROR: Invalid value for --center-in. It should be 0, 1, or 2.\n\n";
+            exit(1);
+        }
+    }
+
+    // Centering Output
+    if (out.count("center-out")) {
+        centerOut = out["center-out"].as<int>();
+        if (centerOut < 0 || centerOut > 2) {
+            cout << "\nERROR: Invalid value for --center-out. It should be 0, 1, or 2.\n\n";
+            exit(1);
+        }
+    }
+
+    // Mean Values
+    if (out.count("mean-value")) {
+    std::vector<std::string> meanValuePairs = out["mean-value"].as<std::vector<std::string>>();
+    
+        for (const auto& pair : meanValuePairs) {
+            size_t equalPos = pair.find('=');
+            if (equalPos == std::string::npos) {
+                cout << "\nERROR: --mean-value should be provided in the format 'variable=value'.\n\n";
+                exit(1);
+            }
+    
+            std::string variable = pair.substr(0, equalPos);
+            std::string valueStr = pair.substr(equalPos + 1);
+    
+            // Check if the value is a valid number
+            try {
+                double value = std::stod(valueStr);
+                meanValues[variable] = value;
+            } catch (const std::invalid_argument&) {
+                  cout << "\nERROR: Value for " << variable << " (" << valueStr << ") is not a valid number.\n\n";
+                  exit(1);
+            }
+        }
+    }
+
 
 
     // Output file
@@ -218,6 +269,12 @@ void print_help() {
         << "   --exposure-names \t One or more column names in the input file naming the exposure(s) to be included in interaction tests." << endl
         << "   --int-covar-names \t Any column names in the input file naming the covariate(s) for which interactions should\n \t\t\t   be included for adjustment (mutually exclusive with --exposure-names)." << endl;
     cout << endl << endl;
-    cout << endl << endl;
 
+  
+    cout << "Centering Conversion Options: " << endl
+       << "   --center-in \t\t Input centering type (0, 1, or 2)." << endl
+       << "   --center-out \t Output centering type (0, 1, or 2)." << endl
+       << "   --mean-value \t Mean value(s) for the variable(s) in the format 'variable=value' (e.g. --mean-value age=24 BMI=20.7)." << endl;
+    cout << endl << endl;
+    cout << endl << endl;
 }

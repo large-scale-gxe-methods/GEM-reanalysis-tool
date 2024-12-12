@@ -89,6 +89,20 @@ Input File Options:
    --int-covar-names     
    		Any column names in the input file naming the covariate(s) for which interactions should be included for adjustment (mutually exclusive with --exposure-names).
 
+
+Centering Conversion Options:
+
+   --center-in
+      A value of 0, 1, or 2 representing the original centering status in the input file: 0 indicates no centering, 1 indicates centering of all exposures and covariates, and 2 indicates centering of interaction covariates only.
+
+
+   --center-out
+      A value of 0, 1, or 2 representing the converted centering status: 0 for no centering, 1 to center all exposures and covariates, and 2 to center only the interaction covariates.
+
+
+   --mean-value
+      Pairs of variable names and their mean values, with each pair connected by an equal sign.
+
 ```
 </details>
 
@@ -145,6 +159,12 @@ robust_P_Value_Joint       - Joint test p-value (K+1 degrees of freedom test of 
 
 ```unix
 ./REGEM --input-file gem.out --exposure-names cov1 --out regem_cov1.out
+```
+
+To change the centering status of cov1 from 0 to 1:
+
+```unix
+./REGEM --input-file gem.out --exposure-names cov1 --out regem_cov1.out --center-in 0 --center-out 1 --mean-value cov1=0.5
 ```
 <br />
 <br />
